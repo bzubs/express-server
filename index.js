@@ -13,8 +13,7 @@ app.use(express.json());
 // Connect MongoDB
 mongoose
   .connect(
-    process.env.MONGO_URI ||
-      "mongodb+srv://bzubs:q2FrZ2NcgWKW9tq7@datawipe.hdcwgrv.mongodb.net/"
+    process.env.MONGO_URI
   )
   .then(() => console.log("MongoDB connected"))
   .catch((err) => console.error("MongoDB connection error:", err));
@@ -23,7 +22,7 @@ mongoose
 const cors = require("cors");
 
 app.use(cors({
-  origin: "http://localhost:3000", 
+  origin: process.env.FRONTEND_URL, 
   credentials: true,
 }));
 

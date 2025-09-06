@@ -5,7 +5,7 @@ const jwt = require("jsonwebtoken");
 const { User } = require("../models/user"); // use require for CommonJS
 
 const router = express.Router();
-const SECRET_KEY = process.env.JWT_SECRET || "supersecretkey";
+const SECRET_KEY = process.env.JWT_SECRET;
 const TOKEN_EXPIRY = "1h";
 
 // Register

@@ -9,7 +9,7 @@ const { User } = require("../models/user");
 const router = express.Router();
 
 // Base URL of your FastAPI server
-const FASTAPI_BASE = "http://localhost:8000";
+const FASTAPI_BASE = process.env.FASTAPI_BASE || "http://localhost:8000";
 
 // ---------------------------
 // Protected routes
