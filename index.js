@@ -1,12 +1,11 @@
 // server.js
+require("dotenv").config();
 const express = require("express");
 const mongoose = require("mongoose");
-const dotenv = require("dotenv");
 const authRoutes = require("./routes/auth");
 const fastapiRoutes = require("./routes/fastapi"); // <-- import FastAPI proxy routes
 const { verifyToken } = require("./middlewares/verify");
 
-dotenv.config();
 const app = express();
 app.use(express.json());
 
@@ -25,7 +24,6 @@ app.use(cors({
   origin: process.env.FRONTEND_URL, 
   credentials: true,
 }));
-
 
 // Auth routes (register/login)
 app.use("/auth", authRoutes);

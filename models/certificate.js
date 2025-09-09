@@ -11,7 +11,8 @@ const CertificateSchema = new mongoose.Schema({
   completedAt: Date,
   logHash: String,
   payload: { type: mongoose.Schema.Types.Mixed },  // full signed JSON from FastAPI
-  pdfPath: String,  // optional path to signed PDF
+  signature : String,
+  pdfUrl: String, // URL to the PDF stored in Cloudinary
 });
 
 const Certificate = mongoose.model("Certificate", CertificateSchema);
