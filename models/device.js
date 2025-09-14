@@ -1,13 +1,9 @@
-// models/Device.js
 const mongoose = require("mongoose");
 
 const DeviceSchema = new mongoose.Schema({
-  id: { type: String, required: true },
-  model: String,
-  firmware: String,
-  capacityGb: Number,
-  owner: { type: mongoose.Schema.Types.ObjectId, ref: "User", required: true },
-  createdAt: { type: Date, default: Date.now },
+  path: { type: String, required: true },
+  asset_tag: { type: String },  // fixed typo
+  device_info: { type: mongoose.Schema.Types.Mixed },
 });
 
 const Device = mongoose.model("Device", DeviceSchema);

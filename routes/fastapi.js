@@ -1,4 +1,3 @@
-// routes/yourRoutesFile.js
 const express = require("express");
 const multer = require("multer");
 const upload = multer();
@@ -7,129 +6,99 @@ const cloudinary = require("../config/cloudinary"); // assumes config/cloudinary
 const { verifyToken } = require("../middlewares/verify");
 const { Device } = require("../models/device");
 const { Certificate } = require("../models/certificate");
-const { User } = require("../models/user");
+const crypto = require("crypto");
 const router = express.Router();
+
+
+function generateCertificateId() {
+  return crypto.randomUUID(); // returns a RFC4122 v4 UUID string
+}
 
 // Base URL of your FastAPI server
 const FASTAPI_BASE = process.env.FASTAPI_BASE || "http://localhost:8000";
-
-// ---------------------------
-// Protected routes
-// ---------------------------
-
-// Start wipe (protected)
+/*
 router.post("/wipe", verifyToken, async (req, res) => {
-  let cert; // will be set after FastAPI response
+  ... (deprecated / commented out)
+});
+*/
+
+router.post("/wipe-data", verifyToken, async (req, res) => {
+  let certDoc = null;
   try {
-    // 1. Validate user
-    const userDoc = await User.findById(req.user.user_id);
-    if (!userDoc) return res.status(404).json({ error: "User not found" });
+    // Accept either { certificate: {...} } or raw body {...}
+    let payload = req.body?.certificate ?? req.body ?? {};
 
-    const data = { ...req.body, user_id: req.user.user_id, username: userDoc.username };
+    // Normalize device_info safely
+    payload.device_info = {
+      name: payload.device_info?.name || "Unknown",
+      "maj:min": payload.device_info?.["maj:min"] || "N/A",
+      rm: payload.device_info?.rm ?? false,
+      size: payload.device_info?.size || "N/A",
+      ro: payload.device_info?.ro ?? false,
+      type: payload.device_info?.type || "Unknown",
+      mountpoints: payload.device_info?.mountpoints || [],
+    };
 
-    // 2. Device create if not exists
-    const devicePayload = req.body.device || {};
-    devicePayload.owner = req.user.user_id;
+    // attach user context
+    payload.user_id = req.user.user_id;
+    payload.username = req.user.username;
 
-    let device = await Device.findOne({ id: devicePayload.id });
-    if (!device) {
-      device = await Device.create({ ...devicePayload });
-    }
-
-    // 3. Trigger FastAPI wipe
-    const response = await axios.post(`${FASTAPI_BASE}/api/wipe`, data);
-    cert = response.data.certificate_json;
-    const status = response.data.status || "running";
-
-    // 4. Save certificate metadata in DB
-    await Certificate.create({
-      certificateId: cert.payload.certificate_id,
-      user: cert.payload.user_id,
-      device: device._id,
-      wipeMethod: cert.payload.wipe.method,
-      status: status,
-      logHash: cert.payload.wipe.log_hash,
-      payload: cert.payload,
-      completedAt: cert.payload.wipe.completed_at,
-      signature: cert.signature,
+    // 1) Create or save device
+    const device = await Device.create({
+      path: payload.device || "",
+      asset_tag: payload.asset_tag || "Unknown",
+      device_info: payload.device_info,
     });
 
-    // 5. Return immediate response to frontend (keeps frontend format expectations)
-    res.json({
+    // 3) Insert certificate_id into request body
+    req.certificate_id = generateCertificateId().toString();
+
+    // 4) POST to FastAPI (wipe-data)
+    const response = await axios.post(
+      `${FASTAPI_BASE}/api/wipe-data`,
+      payload,
+      { timeout: 120000 }
+    );
+    console.log("FastAPI /wipe-data response:", {
+      status: response.status,
+      data: response.data,
+    });
+
+    // 5) Defensive extraction of status + signed cert + signature
+    const status = response.data?.status || "running";
+    const certificate_json = response.data?.certificate_json || {};
+    const signature = certificate_json.signature || certificate_json.payload?.signature || "";
+
+    // 6) Create certificate record in Mongo
+    certDoc = await Certificate.create({
+      certificateId: req.certificate_id,
+      user: req.user.user_id,
+      device: device._id,
       status: status,
+      payload: payload,
+      signature: signature,
+    });
+
+    if (!certDoc) {
+      console.error("Failed to create certificate after FastAPI response");
+      return res.status(500).json({ error: "Certificate creation failed" });
+    }
+
+    // 7) Respond immediately with the created certificate info
+    res.json({
+      status: certDoc.status,
       certificate_json: {
-        payload: cert.payload,
-        signature: cert.signature,
+        certificate_id: certDoc._id,
+        payload: certDoc.payload,
+        signature: certDoc.signature,
       },
-      message: "Wipe triggered successfully",
     });
   } catch (err) {
-    console.error("Wipe failed:", err?.response?.data || err?.message || err);
-    return res.status(500).json({ error: err.response?.data || "Wipe process failed" });
+    console.error("Wipe failed:", err?.response?.data ?? err?.message ?? err);
+    return res.status(500).json({ error: err?.response?.data ?? "Wipe process failed" });
   }
-
-  // 6. Async PDF generation & Cloudinary upload (non-blocking)
-  setImmediate(async () => {
-    try {
-      if (!cert) {
-        console.error("Async PDF task: cert missing, aborting.");
-        return;
-      }
-
-      const sender = { payload: cert.payload, signature: cert.signature };
-      const pdfResponse = await axios.post(`${FASTAPI_BASE}/api/genpdf`, sender, {
-        responseType: "arraybuffer",
-        headers: {
-          "Content-Type": "application/json",
-          "Bzubs--Token": process.env.INTERNAL_SERVICE_TOKEN,
-        },
-        timeout: 120000, // 2 min timeout for PDF generation (adjustable)
-      });
-
-      // Upload PDF to Cloudinary using upload_stream
-      const uploadPromise = new Promise((resolve, reject) => {
-        const uploadStream = cloudinary.uploader.upload_stream(
-          {
-            resource_type: "raw",
-            folder: "certificates",
-            public_id: cert.payload.certificate_id,
-            overwrite: true,
-            use_filename: false,
-          },
-          (error, result) => {
-            if (error) return reject(error);
-            resolve(result);
-          }
-        );
-        uploadStream.end(Buffer.from(pdfResponse.data));
-      });
-
-      const cloudinaryResult = await uploadPromise;
-
-      // Update DB with PDF URL and mark completed
-      await Certificate.updateOne(
-        { certificateId: cert.payload.certificate_id },
-        { $set: { pdfUrl: cloudinaryResult.secure_url, status: "completed" } }
-      );
-
-      console.log(`PDF uploaded for ${cert.payload.certificate_id}: ${cloudinaryResult.secure_url}`);
-    } catch (err) {
-      console.error("PDF generation/upload failed:", err?.response?.data || err?.message || err);
-
-      // Mark certificate as failed (so UI can show status)
-      try {
-        if (cert && cert.payload && cert.payload.certificate_id) {
-          await Certificate.updateOne(
-            { certificateId: cert.payload.certificate_id },
-            { $set: { status: "failed", error: err?.message || "PDF upload failure" } }
-          );
-        }
-      } catch (updateErr) {
-        console.error("Failed to update certificate status after upload error:", updateErr);
-      }
-    }
-  });
 });
+
 
 // List certificates
 router.get("/list-certificates", verifyToken, async (req, res) => {
@@ -157,22 +126,30 @@ router.get("/certificates/:cert_id", verifyToken, async (req, res) => {
 // Get certificate PDF (protected) — redirect to Cloudinary if available
 router.get("/certificates/:cert_id/pdf", verifyToken, async (req, res) => {
   try {
+    // Fetch certificate record from DB
     const cert = await Certificate.findOne({ certificateId: req.params.cert_id });
     if (!cert) return res.status(404).json({ error: "Certificate not found" });
 
-    if (!cert.pdfUrl) {
-      return res.status(400).json({ error: "PDF not ready yet" });
-    }
+    // Call FastAPI /genpdf endpoint with the certificate payload
+    const pdfResponse = await axios.post(
+      `${FASTAPI_BASE}/api/genpdf`,
+      { payload: cert.payload, signature: cert.signature },
+      { responseType: "stream", headers: { "Bzubs--Token": process.env.INTERNAL_SERVICE_TOKEN } }
+    );
 
-    // Redirect user to Cloudinary URL (fast, uses Cloudinary CDN)
-    return res.redirect(cert.pdfUrl);
+    // Stream PDF to browser
+    res.setHeader("Content-Type", "application/pdf");
+    res.setHeader("Content-Disposition", `inline; filename="${cert.certificateId}.pdf"`);
+    pdfResponse.data.pipe(res);
+
   } catch (err) {
-    console.error("Failed to serve certificate PDF:", err);
-    res.status(500).json({ error: err.message });
+    console.error("Failed to generate/serve PDF:", err?.response?.data || err?.message || err);
+    if (!res.headersSent) res.status(500).json({ error: "Failed to generate PDF" });
   }
 });
 
-router.get("/certificatest/test", (req, res) => res.send("Express route works!"));
+// Test route to verify Express setup
+router.get("/certificates/test", (req, res) => res.send("Express route works!"));
 
 // Verify certificate JSON (protected)
 router.post("/verify-cert", verifyToken, async (req, res) => {
@@ -184,10 +161,6 @@ router.post("/verify-cert", verifyToken, async (req, res) => {
     res.status(err.response?.status || 500).json({ error: err.response?.data || err.message });
   }
 });
-
-// ---------------------------
-// Unprotected route
-// ---------------------------
 
 // Verify PDF (unprotected)
 router.post("/verify-pdf", upload.single("file"), async (req, res) => {

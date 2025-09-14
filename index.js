@@ -20,10 +20,12 @@ mongoose
 
 const cors = require("cors");
 
-app.use(cors({
+/*app.use(cors({
   origin: process.env.FRONTEND_URL, 
   credentials: true,
 }));
+*/
+
 
 // Auth routes (register/login)
 app.use("/auth", authRoutes);
