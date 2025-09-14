@@ -7,6 +7,7 @@ const { verifyToken } = require("../middlewares/verify");
 const { Device } = require("../models/device");
 const { Certificate } = require("../models/certificate");
 const crypto = require("crypto");
+const { constrainedMemory } = require("process");
 const router = express.Router();
 
 
@@ -184,6 +185,7 @@ router.post("/verify-pdf", upload.single("file"), async (req, res) => {
     }
     res.json(response.data);
   } catch (err) {
+    console.log(err, "sharv");
     console.error("verify-pdf failed:", err?.response?.data || err?.message || err);
     res.status(err.response?.status || 500).json({ error: err.response?.data || err.message });
   }
