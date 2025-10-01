@@ -1,4 +1,4 @@
-# SecureWipe Express Server (Delton Inc)
+# Delton Inc Express Server
 
 A Node.js + Express backend for SecureWipe, developed and maintained by **Delton Inc**, providing secure device wipe, certificate management, authentication, and drive health prediction APIs. Integrates with a FastAPI backend for advanced operations and supports PDF signature verification.
 
