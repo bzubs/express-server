@@ -60,10 +60,7 @@ router.post("/wipe-data", verifyToken, async (req, res) => {
       payload,
       { timeout: 120000 }
     );
-    console.log("FastAPI /wipe-data response:", {
-      status: response.status,
-      data: response.data,
-    });
+    
 
     // 5) Defensive extraction of status + signed cert + signature
     const status = response.data?.status || "running";
@@ -177,15 +174,14 @@ router.post("/verify-pdf", upload.single("file"), async (req, res) => {
     });
 
     if (response.data.valid && response.data.coverage === "SignatureCoverageLevel.ENTIRE_FILE") {
-      response.data.message = "The PDF signature is valid and issued by SecureWipe.";
+      response.data.message = "The PDF signature is valid and issued by Delton Inc.";
     } else if (!response.data.valid && response.data.coverage === "SignatureCoverageLevel.ENTIRE_FILE") {
-      response.data.message = "The PDF contains signature that are not issued by SecureWipe.";
+      response.data.message = "The PDF contains signature that are not issued by Delton Inc.";
     } else {
       response.data.message = "The PDF signature is either invalid or not present.";
     }
     res.json(response.data);
   } catch (err) {
-    console.log(err, "sharv");
     console.error("verify-pdf failed:", err?.response?.data || err?.message || err);
     res.status(err.response?.status || 500).json({ error: err.response?.data || err.message });
   }
@@ -217,6 +213,20 @@ router.post("/drive/health", verifyToken, async (req, res) => {
     res.json(response.data);
   } catch (err) {
     console.error("drive/health failed:", err?.response?.data || err?.message || err);
+    res.status(err.response?.status || 500).json({ error: err.response?.data || err.message });
+  }
+});
+
+router.post("/chatbot", async (req, res) => {
+  if (!req.body.question) {
+    return res.status(400).json({ error: "Question field is required" });
+  }
+
+  try {
+    const response = await axios.post(`${FASTAPI_BASE}/api/chatbot`, req.body);
+    res.status(200).json(response.data);
+  } catch (err) {
+    console.error("chatbot failed:", err?.response?.data || err?.message || err);
     res.status(err.response?.status || 500).json({ error: err.response?.data || err.message });
   }
 });

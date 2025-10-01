@@ -1,0 +1,114 @@
+mongodb+srv://bzubs:q2FrZ2NcgWKW9tq7@datawipe.hdcwgrv.mongodb.net/
+
+pwd: q2FrZ2NcgWKW9tq7
+
+
+
+api/certificates/7ecad85b-2ce7-48b3-9eb3-c152f04ed596/pdf
+
+
+
+
+MONGO_DB_URI = "mongodb+srv://bzubs:q2FrZ2NcgWKW9tq7@datawipe.hdcwgrv.mongodb.net/"
+FRONTEND_URL = "http://localhost:3000"
+JWT_SECRET = "yourkey"
+
+
+gemini api key: AIzaSyAL_jbXYAyDAHLuiYvdsd1DRBUSMqieCcY
+
+
+fastapi-uservice.railway.internal
+
+
+backend server
+
+express-server-production-b4f4.up.railway.app
+
+express-server-production-b4f4.up.railway.app
+
+
+mongodb+srv://bzubs:q2FrZ2NcgWKW9tq7@datawipe.hdcwgrv.mongodb.net/?retryWrites=true&w=majority&appName=datawipe
+
+
+
+
+
+
+cloudinary 
+
+cloud name:dkngxyidc
+api secret: ndfYo1ODBaml9UJApSRB9apTfng
+
+api key = 971918225245618
+
+
+
+
+
+{
+   "certificate" : {
+  "certificate_id": "CERT-20250912161552",
+  "device": "/dev/sda",
+  "asset_tag": "AUTO",
+  "data_classification": "INTERNAL",
+  "device_info": {
+    "name": "sda",
+    "maj:min": "8:0",
+    "rm": true,
+    "size": "14.6G",
+    "ro": false,
+    "type": "disk",
+    "mountpoints": []
+  },
+  "system_info": {
+    "os": "Linux sid 6.12.33+kali-amd64 #1 SMP PREEMPT_DYNAMIC Kali 6.12.33-1kali1 (2025-06-25) x86_64 GNU/Linux",
+    "cryptsetup_version": "cryptsetup 2.7.5 flags: UDEV BLKID KEYRING KERNEL_CAPI HW_OPAL ",
+    "kernel_version": "6.12.33+kali-amd64",
+    "timestamp": "2025-09-12T16:15:52.788352"
+  },
+  "session_id": "20250912161552",
+  "method": "Cryptographic Erase via LUKS Encryption + Key Destruction",
+  "nist_standard": "SP 800-88 Rev 1 (Purge Level)",
+  "start_time": "2025-09-12T16:15:52.766898",
+  "completion_time": "2025-09-12T16:16:10.039477",
+  "operator": "root",
+  "hostname": "sid",
+  "verification_results": {
+    "luks_decryption": "PASSED",
+    "filesystem_access": "PASSED"
+  },
+  "final_status": "SUCCESS",
+  "disposition": "Device is CLEARED FOR UNRESTRICTED REUSE."
+}
+}
+
+
+
+{
+  "certificate": {
+    "certificate_id": "CERT-20250913024402",
+    "device": "/dev/sda",
+    "asset_tag": "UNKNOWN",
+    "data_classification": "INTERNAL",
+    "device_info": {},
+    "system_info": {
+      "os": "Linux sid 6.12.33+kali-amd64 #1 SMP PREEMPT_DYNAMIC Kali 6.12.33-1kali1 (2025-06-25) x86_64 GNU/Linux",
+      "cryptsetup_version": "cryptsetup 2.7.5 flags: UDEV BLKID KEYRING KERNEL_CAPI HW_OPAL ",
+      "kernel_version": "6.12.33+kali-amd64",
+      "timestamp": "2025-09-13T02:44:02.667808"
+    },
+    "session_id": "20250913024402",
+    "method": "Cryptographic Erase via LUKS + Key Destruction",
+    "nist_standard": "SP 800-88 Rev 1 (Purge Level)",
+    "start_time": "2025-09-13T02:44:02.657758",
+    "completion_time": "2025-09-13T02:44:16.222741",
+    "operator": "root",
+    "hostname": "sid",
+    "verification_results": {
+      "luks_decryption": "PASSED",
+      "filesystem_access": "PASSED"
+    },
+    "final_status": "SUCCESS",
+    "disposition": "Device is CLEARED FOR UNRESTRICTED REUSE."
+  }
+}
